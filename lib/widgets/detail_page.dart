@@ -4,7 +4,7 @@ import '../models/trend_model.dart';
 
 class DetailPage extends StatelessWidget {
   final Trend trend;
-  const DetailPage({Key? key, required this.trend}) : super(key: key);
+  const DetailPage({super.key, required this.trend});
 
   @override
   Widget build(BuildContext context) {

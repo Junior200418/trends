@@ -11,23 +11,27 @@ class HomeScreen extends StatefulWidget {
 
   /// Provide a repository (defaults to in-memory mock).
   const HomeScreen({
-    Key? key,
+    super.key,
     this.repository = const InMemoryTrendRepository(),
-  }) : super(key: key);
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  static const int _kInitialPage = 10000;
+  // Multiplier to create a large but finite virtual list.
+  // Adjust if you expect extremely long user sessions; 10k is typically fine.
+  static const int _kLoopMultiplier = 10000;
+
   late final PageController _pageController;
   late Future<List<Trend>> _trendsFuture;
+  int? _virtualItemCount;
+  int? _centerPage;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(initialPage: _kInitialPage);
     _loadTrends();
   }
 
@@ -43,6 +47,47 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Compute controller and virtual counts once trends are loaded.
+  void _initLoopingController(int dataLength) {
+    if (dataLength <= 0) return;
+
+    // Create a large but finite virtual count to avoid unlimited index growth.
+    final virtualCount = dataLength * _kLoopMultiplier;
+    final center = virtualCount ~/ 2;
+
+    _virtualItemCount = virtualCount;
+    _centerPage = center;
+
+    // dispose previous controller if any (safety)
+    try {
+      _pageController.dispose();
+    } catch (_) {}
+
+    _pageController = PageController(initialPage: center);
+  }
+
+  // If the user scrolls near the edges, jump back to a center page preserving logical index.
+  void _recenterIfNeeded(int rawIndex, int dataLength) {
+    final virtualCount = _virtualItemCount;
+    final center = _centerPage;
+    if (virtualCount == null || center == null) return;
+
+    // threshold: when within one set of data from the start or end, recenter
+    final threshold = dataLength * 2;
+    if (rawIndex <= threshold || rawIndex >= virtualCount - threshold) {
+      final logicalIndex = rawIndex % dataLength;
+      final target = center + logicalIndex;
+      // jump without animation to avoid visible jump; done on next frame to avoid modifying during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // only jump if still far from center to avoid unnecessary calls
+        if ((_pageController.page ?? rawIndex).round() != target) {
+          _pageController.jumpToPage(target);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -52,7 +97,6 @@ class _HomeScreenState extends State<HomeScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const _LoadingView();
           }
-
           if (snapshot.hasError) {
             return _ErrorView(
               message: snapshot.error?.toString() ?? 'Unknown error',
@@ -65,9 +109,17 @@ class _HomeScreenState extends State<HomeScreen> {
             return _EmptyView(onRefresh: _loadTrends);
           }
 
+          // initialize controller and counts once trends are present
+          if (_virtualItemCount == null || _centerPage == null) {
+            _initLoopingController(trends.length);
+          }
+
+          final virtualCount = _virtualItemCount!;
           return PageView.builder(
             controller: _pageController,
             scrollDirection: Axis.vertical,
+            itemCount: virtualCount, // finite but large
+            onPageChanged: (index) => _recenterIfNeeded(index, trends.length),
             itemBuilder: (context, index) {
               final trend = trends[index % trends.length];
               return TrendCard(trend: trend);
@@ -81,7 +133,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
 /// Minimal centered loading indicator matching dark theme.
 class _LoadingView extends StatelessWidget {
-  const _LoadingView({Key? key}) : super(key: key);
+  const _LoadingView();
 
   @override
   Widget build(BuildContext context) {
@@ -94,7 +146,7 @@ class _LoadingView extends StatelessWidget {
 /// Minimal empty state with refresh action.
 class _EmptyView extends StatelessWidget {
   final VoidCallback onRefresh;
-  const _EmptyView({Key? key, required this.onRefresh}) : super(key: key);
+  const _EmptyView({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -110,8 +162,8 @@ class _EmptyView extends StatelessWidget {
             const SizedBox(height: 12),
             ElevatedButton(
               onPressed: onRefresh,
-              child: const Text('Refresh'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.white12),
+              child: const Text('Refresh'),
             ),
           ],
         ),
@@ -124,12 +176,11 @@ class _EmptyView extends StatelessWidget {
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({Key? key, required this.message, required this.onRetry})
-    : super(key: key);
+  const _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    final displayMessage =
+    final display =
         message.length > 120 ? '${message.substring(0, 120)}...' : message;
     return SafeArea(
       child: Center(
@@ -145,17 +196,17 @@ class _ErrorView extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                displayMessage,
+                display,
                 style: const TextStyle(color: Colors.white70),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: onRetry,
-                child: const Text('Retry'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white12,
                 ),
+                child: const Text('Retry'),
               ),
             ],
           ),

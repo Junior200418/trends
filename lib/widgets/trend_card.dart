@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/trend_model.dart';
 import 'detail_page.dart';
 import '../constants/categories.dart';
+import '../services/category_background_service.dart';
 
 class TrendCard extends StatefulWidget {
   final Trend trend;
@@ -26,14 +27,21 @@ class _TrendCardState extends State<TrendCard> {
     final categoryEnum = Category.fromName(widget.trend.category);
     final accent = categoryEnum.accent;
 
+    // Get cached AssetImage (synchronous) — stable mapping per trend.id
+    final imageProvider = CategoryBackgroundService.instance
+        .getImageProviderForTrend(widget.trend);
+
     return Stack(
       children: [
-        // Background (replace with Image.asset(...) when assets ready)
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade900,
-            // Example for later: add image per category
-            // image: DecorationImage(image: AssetImage('${categoryEnum.assetPath}/img1.jpg'), fit: BoxFit.cover),
+        // Background image (uses Image with errorBuilder to avoid blank if asset missing)
+        Positioned.fill(
+          child: Image(
+            image: imageProvider,
+            fit: BoxFit.cover,
+            // show accent color fallback if asset can't be loaded
+            errorBuilder: (context, error, stackTrace) {
+              return Container(color: accent.withOpacity(0.12));
+            },
           ),
         ),
 
@@ -116,6 +124,8 @@ class _TrendCardState extends State<TrendCard> {
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
 
@@ -127,6 +137,8 @@ class _TrendCardState extends State<TrendCard> {
                 widget.trend.insight,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16, color: Colors.white70),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
 
@@ -173,3 +185,4 @@ class _TrendCardState extends State<TrendCard> {
     return '${diff.inDays}d';
   }
 }
+// ...existing code...

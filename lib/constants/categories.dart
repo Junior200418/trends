@@ -2,37 +2,25 @@
 import 'package:flutter/material.dart';
 
 enum Category {
-  FX(displayName: 'FX', assetFolder: 'fx', accent: Color(0xFF7DD3FC)),
-  Oil(displayName: 'Oil', assetFolder: 'oil', accent: Color(0xFFF97316)),
+  OilAndGas(
+    displayName: 'Oil & Gas',
+    assetFolder: 'oil_and_gas',
+    accent: Color(0xFFF97316),
+  ),
+  Politics(
+    displayName: 'Politics',
+    assetFolder: 'politics',
+    accent: Color(0xFF34D399),
+  ),
+  ForexCrypto(
+    displayName: 'Forex & Crypto',
+    assetFolder: 'forex_crypto',
+    accent: Color(0xFF7DD3FC),
+  ),
   Inflation(
     displayName: 'Inflation',
     assetFolder: 'inflation',
     accent: Color(0xFFFCA5A5),
-  ),
-  Equities(
-    displayName: 'Equities',
-    assetFolder: 'equities',
-    accent: Color(0xFF60A5FA),
-  ),
-  Crypto(
-    displayName: 'Crypto',
-    assetFolder: 'crypto',
-    accent: Color(0xFFA78BFA),
-  ),
-  Policy(
-    displayName: 'Policy',
-    assetFolder: 'policy',
-    accent: Color(0xFF34D399),
-  ),
-  Global(
-    displayName: 'Global',
-    assetFolder: 'global',
-    accent: Color(0xFF94A3B8),
-  ),
-  Commodities(
-    displayName: 'Commodities',
-    assetFolder: 'commodities',
-    accent: Color(0xFFFDE68A),
   ),
   Unknown(
     displayName: 'Unknown',
@@ -50,32 +38,48 @@ enum Category {
     required this.accent,
   });
 
-  /// Parse a category name (case-insensitive). Returns Category.Unknown if no match.
+  /// Parse a category name (case-insensitive) and common aliases.
+  /// Returns Category.Unknown if no match.
   static Category fromName(String? name) {
     if (name == null) return Category.Unknown;
-    final normalized = name.trim().toLowerCase();
+    final n = name.trim().toLowerCase();
+    if (n.isEmpty) return Category.Unknown;
+
+    // common aliases mapping
+    if (n.contains('oil') ||
+        n.contains('gas') ||
+        n.contains('oil&gas') ||
+        n.contains('oil & gas')) {
+      return Category.OilAndGas;
+    }
+    if (n.contains('polit') || n.contains('policy') || n.contains('politics')) {
+      return Category.Politics;
+    }
+    if (n == 'fx' ||
+        n.contains('forex') ||
+        n.contains('crypto') ||
+        n.contains('bitcoin') ||
+        n.contains('btc')) {
+      return Category.ForexCrypto;
+    }
+    if (n.contains('inflation') || n.contains('cpi')) {
+      return Category.Inflation;
+    }
+
+    // fallback: try matching enum name or displayName
     try {
       return Category.values.firstWhere(
-        (c) =>
-            c.displayName.toLowerCase() == normalized ||
-            c.name.toLowerCase() == normalized,
+        (c) => c.name.toLowerCase() == n || c.displayName.toLowerCase() == n,
       );
     } catch (_) {
       return Category.Unknown;
     }
   }
 
-  /// Convenience: get asset folder path for this category
+  /// Asset path base for this category (folder path).
   String get assetPath => 'assets/images/$assetFolder';
 
-  /// Convenience: get a human readable label (useful in UI)
-  @override
-  String toString() => displayName;
-}
-
-extension CategoryHelpers on Category {
-  Color get accentColor => accent;
-  String get folderName => assetFolder;
+  /// Human readable label
   String get label => displayName;
 }
  // ...existing code...

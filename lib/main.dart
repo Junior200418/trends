@@ -11,7 +11,7 @@ void main() {
 }
 
 class TrendsApp extends StatelessWidget {
-  const TrendsApp({Key? key}) : super(key: key);
+  const TrendsApp({super.key});
 
   @override
   Widget build(BuildContext context) {
