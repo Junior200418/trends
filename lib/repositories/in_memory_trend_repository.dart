@@ -19,6 +19,7 @@ class InMemoryTrendRepository implements TrendRepository {
       Category.Politics,
       Category.ForexCrypto,
       Category.Inflation,
+      Category.Unknown,
     ];
 
     // produce deterministic list (ids stable across runs)

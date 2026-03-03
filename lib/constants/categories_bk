@@ -1,3 +1,4 @@
+// ...existing code...
 import 'package:flutter/material.dart';
 
 enum Category {
@@ -37,20 +38,35 @@ enum Category {
     required this.accent,
   });
 
+  /// Parse a category name (case-insensitive) and common aliases.
+  /// Returns Category.Unknown if no match.
   static Category fromName(String? name) {
     if (name == null) return Category.Unknown;
     final n = name.trim().toLowerCase();
     if (n.isEmpty) return Category.Unknown;
 
-    if (n.contains('oil') || n.contains('gas') || n.contains('oil & gas')) {
+    // common aliases mapping
+    if (n.contains('oil') ||
+        n.contains('gas') ||
+        n.contains('oil&gas') ||
+        n.contains('oil & gas')) {
       return Category.OilAndGas;
     }
-    if (n.contains('polit') || n.contains('policy')) return Category.Politics;
-    if (n.contains('forex') || n.contains('crypto') || n.contains('btc')) {
+    if (n.contains('polit') || n.contains('policy') || n.contains('politics')) {
+      return Category.Politics;
+    }
+    if (n == 'fx' ||
+        n.contains('forex') ||
+        n.contains('crypto') ||
+        n.contains('bitcoin') ||
+        n.contains('btc')) {
       return Category.ForexCrypto;
     }
-    if (n.contains('inflation') || n.contains('cpi')) return Category.Inflation;
+    if (n.contains('inflation') || n.contains('cpi')) {
+      return Category.Inflation;
+    }
 
+    // fallback: try matching enum name or displayName
     try {
       return Category.values.firstWhere(
         (c) => c.name.toLowerCase() == n || c.displayName.toLowerCase() == n,
@@ -60,10 +76,10 @@ enum Category {
     }
   }
 
+  /// Asset path base for this category (folder path).
   String get assetPath => 'assets/images/$assetFolder';
-  String get label => displayName;
 
-  /// List of display names for all categories
-  static List<String> get allDisplayNames =>
-      Category.values.map((c) => c.displayName).toList();
+  /// Human readable label
+  String get label => displayName;
 }
+ // ...existing code...
