@@ -12,15 +12,15 @@ class CategoryBackgroundService {
       CategoryBackgroundService._();
 
   // Number of images available per category (adjust if different per category)
-  static const int defaultImagesPerCategory = 8;
+  static const int defaultImagesPerCategory = 5;
 
   // Per-category override counts (keep small if you have few assets)
   static const Map<Category, int> _imageCounts = {
-    Category.OilAndGas: 8,
-    Category.Politics: 6,
-    Category.ForexCrypto: 8,
-    Category.Inflation: 6,
-    Category.Unknown: 4,
+    Category.OilAndGas: 5,
+    Category.Politics: 5,
+    Category.ForexCrypto: 5,
+    Category.Inflation: 5,
+    Category.Unknown: 5,
   };
 
   // Cache of AssetImage instances by asset path
